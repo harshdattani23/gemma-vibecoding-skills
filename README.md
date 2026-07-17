@@ -187,7 +187,7 @@ supported. Pick whichever option below fits your setup.
 ### Option A — ollama library (simplest)
 
 ```sh
-ollama pull gemma4            # or gemma4:26b-nvfp4, qwen3.6:35b-a3b, ...
+ollama pull gemma4            # or gemma4:12b-nvfp4, gemma4:26b-nvfp4, gemma4:31b, ...
 gemma-coder setup      # pick it, done
 ```
 
