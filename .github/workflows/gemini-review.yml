@@ -100,8 +100,6 @@ jobs:
                 ]
               }
             }
-          extensions: |
-            [
-              "https://github.com/gemini-cli-extensions/code-review"
-            ]
-          prompt: '/pr-code-review'
+          # The review prompt is vendored at .gemini/commands/repo-pr-review.toml —
+          # no external extension is fetched at runtime.
+          prompt: '/repo-pr-review'
