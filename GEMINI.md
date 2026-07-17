@@ -1,7 +1,7 @@
 # Review guide for gemma-vibecoding-skills
 
 This repo is an Agent Skill: a frontier agent plans and reviews while a local model
-writes code via `scripts/gemma_worker.py` (single files) and `scripts/gemma_batch.py`
+writes code via `gemma-coder/scripts/gemma_worker.py` (single files) and `gemma-coder/scripts/gemma_batch.py`
 (dependency-ordered batches). These scripts run unsandboxed on end-user machines, so
 review with that threat model in mind.
 

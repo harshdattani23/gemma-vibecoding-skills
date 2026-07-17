@@ -11,7 +11,7 @@ from contextlib import redirect_stderr
 from unittest import mock
 
 
-WORKER_PATH = pathlib.Path(__file__).parents[1] / "scripts" / "gemma_worker.py"
+WORKER_PATH = pathlib.Path(__file__).parents[1] / "gemma-coder" / "scripts" / "gemma_worker.py"
 SPEC = importlib.util.spec_from_file_location("gemma_worker", WORKER_PATH)
 worker = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(worker)

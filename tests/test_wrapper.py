@@ -6,7 +6,7 @@ import unittest
 
 
 ROOT = pathlib.Path(__file__).parents[1]
-WRAPPER = ROOT / "gemma-coder.sh"
+WRAPPER = ROOT / "gemma-coder" / "gemma-coder.sh"
 INSTALLER = ROOT / "install.sh"
 
 
@@ -71,6 +71,8 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertIn("Usage:", result.stderr)
 
+    PAYLOAD = ["LICENSE", "SKILL.md", "gemma-coder.sh", "scripts"]
+
     def test_link_mode_installs_only_the_skill_payload(self):
         with tempfile.TemporaryDirectory() as directory:
             home = pathlib.Path(directory)
@@ -81,12 +83,10 @@ class InstallerTests(unittest.TestCase):
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             skill = home / ".claude/skills/gemma-coder"
-            self.assertTrue(skill.is_dir())
-            self.assertFalse(skill.is_symlink())
+            self.assertTrue(skill.is_symlink())
             installed = sorted(p.name for p in skill.iterdir())
-            self.assertEqual(installed, [
-                "LICENSE", "README.md", "SKILL.md", "gemma-coder.sh", "scripts"])
-            for dev_only in (".git", ".github", "GEMINI.md", "tests"):
+            self.assertEqual(installed, self.PAYLOAD)
+            for dev_only in (".git", ".github", "GEMINI.md", "tests", "install.sh"):
                 self.assertFalse((skill / dev_only).exists(),
                                  "%s must not be installed" % dev_only)
 
@@ -100,9 +100,9 @@ class InstallerTests(unittest.TestCase):
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             canonical = home / ".local/share/gemma-coder"
+            self.assertFalse(canonical.is_symlink())
             installed = sorted(p.name for p in canonical.iterdir())
-            self.assertEqual(installed, [
-                "LICENSE", "README.md", "SKILL.md", "gemma-coder.sh", "scripts"])
+            self.assertEqual(installed, self.PAYLOAD)
             self.assertFalse((canonical / ".git").exists())
 
     def test_installer_creates_path_command_in_fake_home(self):

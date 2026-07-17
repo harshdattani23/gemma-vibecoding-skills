@@ -13,24 +13,15 @@ case "$#:${1:-}" in
         ;;
 esac
 
-# Only the skill payload is installed; development files are excluded.
-PAYLOAD="SKILL.md README.md LICENSE gemma-coder.sh scripts"
-
 install_into() {
     parent="$1"; target="$2/gemma-coder"
     [ -d "$parent" ] || return 0            # agent not installed on this machine
     mkdir -p "$2"
     rm -rf "$target"
     if [ "$MODE" = "copy" ]; then
-        mkdir -p "$target"
-        for item in $PAYLOAD; do
-            cp -R "$SRC/$item" "$target/$item"
-        done
+        cp -R "$SRC/gemma-coder" "$target"
     else
-        mkdir -p "$target"
-        for item in $PAYLOAD; do
-            ln -s "$SRC/$item" "$target/$item"
-        done
+        ln -s "$SRC/gemma-coder" "$target"
     fi
     echo "installed -> $target"
 }
@@ -51,14 +42,11 @@ if [ "$MODE" = "copy" ]; then
     CANONICAL="$HOME/.local/share/gemma-coder"
     mkdir -p "$HOME/.local/share"
     rm -rf "$CANONICAL"
-    mkdir -p "$CANONICAL"
-    for item in $PAYLOAD; do
-        cp -R "$SRC/$item" "$CANONICAL/$item"
-    done
+    cp -R "$SRC/gemma-coder" "$CANONICAL"
     ln -sf "$CANONICAL/gemma-coder.sh" "$HOME/.local/bin/gemma-coder"
 else
-    ln -sf "$SRC/gemma-coder.sh" "$HOME/.local/bin/gemma-coder"
+    ln -sf "$SRC/gemma-coder/gemma-coder.sh" "$HOME/.local/bin/gemma-coder"
 fi
 echo "installed -> $HOME/.local/bin/gemma-coder"
 
-echo "Done. Run 'gemma-coder setup' (or 'python3 $SRC/scripts/setup.py') to pick your model."
+echo "Done. Run 'gemma-coder setup' (or 'python3 $SRC/gemma-coder/scripts/setup.py') to pick your model."

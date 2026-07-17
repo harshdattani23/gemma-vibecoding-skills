@@ -41,7 +41,22 @@ silently rewriting — so the local model stays the author.
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | `llama-server -m model.gguf` | OpenAI-compatible (8080) |
 | [mlx_lm](https://github.com/ml-explore/mlx-lm) (Apple Silicon) | `mlx_lm.server --model <repo>` | OpenAI-compatible (8080) |
 
-## Install (all agents at once)
+## Install
+
+### Quickest: npx (no clone)
+
+```sh
+npx skills add harshdattani23/gemma-vibecoding-skills
+```
+
+Installs the skill into your agents' skill directories via the
+[skills CLI](https://skills.sh). Then pick your model:
+
+```sh
+python3 ~/.claude/skills/gemma-coder/scripts/setup.py
+```
+
+### From a clone (adds the `gemma-coder` command)
 
 ```sh
 git clone https://github.com/harshdattani23/gemma-vibecoding-skills
@@ -69,7 +84,7 @@ gemma-coder setup --save gemma4:26b-nvfp4
 ### Claude Code
 
 `install.sh` links the skill into `~/.claude/skills/gemma-coder` (all projects).
-For a single project instead: copy this folder to `<project>/.claude/skills/gemma-coder`.
+For a single project instead: copy the `gemma-coder/` folder to `<project>/.claude/skills/gemma-coder`.
 
 Verify: run `claude`, then ask *"what skills do you have?"* — `gemma-coder` should be listed.
 
@@ -119,8 +134,8 @@ Use it:
 
 ### Any other agent
 
-If it supports the Agent Skills standard, copy or symlink this folder into its skills
-directory — nothing here is agent-specific. If it doesn't, you can still paste
+If it supports the Agent Skills standard, copy or symlink the `gemma-coder/` folder
+into its skills directory — nothing here is agent-specific. If it doesn't, you can still paste
 `SKILL.md` into its custom-instructions file (`AGENTS.md`, rules, etc.); the scripts
 are plain CLIs.
 
@@ -135,7 +150,7 @@ supported. Pick whichever option below fits your setup.
 
 ```sh
 ollama pull gemma4            # or gemma4:26b-nvfp4, qwen3.6:35b-a3b, ...
-python3 scripts/setup.py      # pick it, done
+gemma-coder setup      # pick it, done
 ```
 
 ### Option B — Hugging Face model, served by ollama
@@ -150,7 +165,7 @@ library release:
    ollama pull hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q3_K_XL
    ollama pull hf.co/unsloth/gemma-4-27b-it-GGUF:Q4_K_M
    ```
-3. Re-run `python3 scripts/setup.py` — the HF model appears in the list like any
+3. Re-run `gemma-coder setup` — the HF model appears in the list like any
    other; pick it and it becomes your coder.
 
 ### Option C — Hugging Face model, no ollama at all
@@ -170,7 +185,7 @@ point the config at the router:
 
 ```sh
 export GEMMA_CODER_API_KEY=hf_...     # or put "api_key" in the config file
-python3 scripts/setup.py --save "Qwen/Qwen3.6-35B-A3B" \
+gemma-coder setup --save "Qwen/Qwen3.6-35B-A3B" \
     --url https://router.huggingface.co --api openai
 ```
 

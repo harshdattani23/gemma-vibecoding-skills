@@ -8,7 +8,7 @@ import unittest
 from unittest import mock
 
 
-BATCH_PATH = pathlib.Path(__file__).parents[1] / "scripts" / "gemma_batch.py"
+BATCH_PATH = pathlib.Path(__file__).parents[1] / "gemma-coder" / "scripts" / "gemma_batch.py"
 SPEC = importlib.util.spec_from_file_location("gemma_batch", BATCH_PATH)
 batch = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(batch)
