@@ -13,15 +13,24 @@ case "$#:${1:-}" in
         ;;
 esac
 
+# Only the skill payload is installed; development files are excluded.
+PAYLOAD="SKILL.md README.md LICENSE gemma-coder.sh scripts"
+
 install_into() {
     parent="$1"; target="$2/gemma-coder"
     [ -d "$parent" ] || return 0            # agent not installed on this machine
     mkdir -p "$2"
     rm -rf "$target"
     if [ "$MODE" = "copy" ]; then
-        cp -R "$SRC" "$target"
+        mkdir -p "$target"
+        for item in $PAYLOAD; do
+            cp -R "$SRC/$item" "$target/$item"
+        done
     else
-        ln -s "$SRC" "$target"
+        mkdir -p "$target"
+        for item in $PAYLOAD; do
+            ln -s "$SRC/$item" "$target/$item"
+        done
     fi
     echo "installed -> $target"
 }
@@ -42,7 +51,10 @@ if [ "$MODE" = "copy" ]; then
     CANONICAL="$HOME/.local/share/gemma-coder"
     mkdir -p "$HOME/.local/share"
     rm -rf "$CANONICAL"
-    cp -R "$SRC" "$CANONICAL"
+    mkdir -p "$CANONICAL"
+    for item in $PAYLOAD; do
+        cp -R "$SRC/$item" "$CANONICAL/$item"
+    done
     ln -sf "$CANONICAL/gemma-coder.sh" "$HOME/.local/bin/gemma-coder"
 else
     ln -sf "$SRC/gemma-coder.sh" "$HOME/.local/bin/gemma-coder"

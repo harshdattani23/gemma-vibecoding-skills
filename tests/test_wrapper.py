@@ -71,6 +71,40 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertIn("Usage:", result.stderr)
 
+    def test_link_mode_installs_only_the_skill_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = pathlib.Path(directory)
+            (home / ".claude").mkdir()
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            result = subprocess.run([str(INSTALLER)], cwd=ROOT, env=env,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            skill = home / ".claude/skills/gemma-coder"
+            self.assertTrue(skill.is_dir())
+            self.assertFalse(skill.is_symlink())
+            installed = sorted(p.name for p in skill.iterdir())
+            self.assertEqual(installed, [
+                "LICENSE", "README.md", "SKILL.md", "gemma-coder.sh", "scripts"])
+            for dev_only in (".git", ".github", "GEMINI.md", "tests"):
+                self.assertFalse((skill / dev_only).exists(),
+                                 "%s must not be installed" % dev_only)
+
+    def test_copy_mode_canonical_copy_excludes_dev_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = pathlib.Path(directory)
+            (home / ".claude").mkdir()
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            result = subprocess.run([str(INSTALLER), "--copy"], cwd=ROOT, env=env,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            canonical = home / ".local/share/gemma-coder"
+            installed = sorted(p.name for p in canonical.iterdir())
+            self.assertEqual(installed, [
+                "LICENSE", "README.md", "SKILL.md", "gemma-coder.sh", "scripts"])
+            self.assertFalse((canonical / ".git").exists())
+
     def test_installer_creates_path_command_in_fake_home(self):
         with tempfile.TemporaryDirectory() as directory:
             home = pathlib.Path(directory)
