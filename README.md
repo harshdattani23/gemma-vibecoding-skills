@@ -184,13 +184,41 @@ builds) are for GPU serving stacks like vLLM and won't load in these runtimes.
 
 ## Manual use (no agent at all)
 
-The worker is a plain CLI:
+The default link-mode installer exposes `gemma-coder` under `~/.local/bin`:
+
 ```sh
-python3 scripts/gemma_worker.py --task tasks/01-parser.md --out src/parser.py \
-    --context src/types.py [--model NAME] [--url URL --api ollama|openai]
+gemma-coder worker --task tasks/01-parser.md --out src/parser.py \
+    --context src/types.py --expect 'class Parser' --stream
 ```
-A task file is a self-contained markdown spec for exactly ONE output file: purpose,
-exact signatures, behavior, edge cases. See `SKILL.md` for what makes a good spec.
+
+The worker rejects explicitly mismatched language fences, validates supported
+languages before atomically replacing the output, and creates `<out>.bak` when
+replacing an existing file. Use `--no-validate` or `--no-backup` only deliberately.
+
+For multi-file work, use an explicit dependency manifest:
+
+```json
+{
+  "tasks": [
+    {"id": "types", "spec": "01-types.md", "output": "src/types.py"},
+    {
+      "id": "parser",
+      "spec": "02-parser.md",
+      "output": "src/parser.py",
+      "depends_on": ["types"]
+    }
+  ]
+}
+```
+
+```sh
+gemma-coder batch --manifest tasks/manifest.json --project-root . --retries 2
+```
+
+Specs are relative to the manifest directory; outputs are project-relative. The
+batch runner validates dependencies, detects cycles, blocks dependents after a
+failure, and feeds validation errors back into retry prompts. See `SKILL.md` for the
+full workflow and exit-code contract.
 
 ## Configuration
 

@@ -1,56 +1,117 @@
 ---
 name: gemma-coder
-description: Delegate code-writing to a local model (Gemma, Qwen, etc.) running on the user's machine. Use for any request to build or change application code when the user wants a local model to write the code while the agent plans and reviews. The agent must NOT write application source files directly.
+description: Delegate code-writing to a configured local or OpenAI-compatible model while the primary agent plans, reviews, and tests. Use when the user explicitly wants a separate model to write application code.
 ---
 
-# gemma-coder: the agent plans, a local model codes
+# gemma-coder
 
-Division of labor (strict):
-- **You (the agent)**: requirements, architecture, task decomposition, prompts, code
-  review, running tests, deciding retries. You write only: task specs under `tasks/`,
-  test files, and glue such as configs when the local model repeatedly fails.
-- **The local model** (via `scripts/gemma_worker.py` in this skill's directory):
-  writes ALL application source files.
+The primary agent owns requirements, architecture, task decomposition, review, and
+tests. The configured worker model writes application source files.
+
+## Resolve the command
+
+`install.sh` links `gemma-coder.sh` to `~/.local/bin/gemma-coder` in link
+mode and installs a canonical copy under `~/.local/share/gemma-coder` in copy
+mode. If `~/.local/bin` is not on `PATH`, invoke `<skill-dir>/gemma-coder.sh`
+directly. The wrapper targets POSIX-like systems with `readlink` and `test -h`;
+it resolves direct and chained symlinks before locating its scripts.
 
 ## First run
 
-Check that a backend is configured: `python3 <skill-dir>/scripts/setup.py --list`
+```bash
+gemma-coder setup --list
+gemma-coder setup --save MODEL
+```
 
-- If it prints backends and models but `~/.config/gemma-coder/config.json` does not
-  exist yet: show the user the model list, ask which model to use, then run
-  `python3 <skill-dir>/scripts/setup.py --save <model>`.
-- If it reports no backend: show the user its install hints (ollama is the easiest;
-  LM Studio, llama.cpp `llama-server`, and `mlx_lm.server` also work) and stop until
-  one is available.
+If no backend is detected, show the setup hints and stop. Do not consume a code
+retry for backend/configuration errors (worker exit code 2).
 
-## Loop
+## Single-file workflow
 
-1. **Plan.** Write `tasks/PLAN.md` in the user's project: goal, file tree, and a
-   numbered task list. Each task = exactly ONE output file, ordered so dependencies
-   come first.
-2. **Spec each task** as `tasks/NN-<name>.md`. A good spec includes: file purpose,
-   exact public function/class signatures, behavior details, edge cases, and libraries
-   allowed. The local model cannot see the repo — the spec plus `--context` files must
-   be fully self-contained. State the target language version and any syntax it must
-   avoid.
-3. **Delegate** each task in dependency order:
-   ```
-   python3 <skill-dir>/scripts/gemma_worker.py --task tasks/NN-name.md \
-       --out src/file.py --context src/dep1.py src/dep2.py
-   ```
-   Pass as `--context` every file the new code must interface with.
-4. **Review** the generated file against the spec, then run it / run tests.
-   Prefer writing the test file yourself before delegating, so review is independent.
-5. **On failure**: do NOT silently fix the code yourself. Improve the spec (state what
-   was wrong, add the failing case as an explicit requirement) and re-run the worker —
-   up to 2 retries per task. After 2 failed retries, fix it directly and note in the
-   final summary that the local model needed a manual fix on that file.
-6. **Summarize**: what the local model wrote, what passed, what needed retries or
-   manual fixes.
+1. Write a self-contained spec under `tasks/` with the exact output contract,
+   signatures, behavior, edge cases, language version, and allowed libraries.
+2. Prefer writing tests before delegating implementation.
+3. Generate one file:
 
-## Notes
+```bash
+gemma-coder worker \
+  --task tasks/01-parser.md \
+  --out src/parser.py \
+  --context src/types.py \
+  --expect 'class Parser'
+```
 
-- Exit code 2 from the worker means backend/config trouble (not a code failure):
-  re-run setup or check the server, don't burn a retry.
-- Model choice per task: `--model NAME` overrides the configured default. Use a small
-  fast model for trivial files, the strongest local model for core logic.
+Useful options:
+
+- `--lang python|javascript|bash`: override language detection from `--out`.
+- `--stream`: display generated content as it arrives.
+- `--no-validate`: explicitly disable syntax validation.
+- `--no-backup`: replace an existing valid output without creating `.bak`.
+
+Generated code is validated before an atomic replacement. Explicitly mismatched
+language fences are rejected. Interrupted streams leave the target untouched and
+save raw partial output as `<out>.partial`.
+
+## Batch workflow
+
+Use `tasks/manifest.json`; do not encode machine-readable dependencies in free-form
+`PLAN.md` text.
+
+```json
+{
+  "tasks": [
+    {
+      "id": "types",
+      "spec": "01-types.md",
+      "output": "src/types.py"
+    },
+    {
+      "id": "parser",
+      "spec": "02-parser.md",
+      "output": "src/parser.py",
+      "depends_on": ["types"]
+    }
+  ]
+}
+```
+
+- `spec` is relative to the manifest directory.
+- `output` is relative to `--project-root`.
+- `depends_on` contains task IDs.
+
+Run:
+
+```bash
+gemma-coder batch \
+  --manifest tasks/manifest.json \
+  --project-root . \
+  --retries 2
+```
+
+The runner validates dependencies, detects cycles, executes a stable topological
+order, passes successful dependency outputs as context, blocks dependents after a
+failure, and includes the previous error in retry prompts. It intentionally has no
+parallel option yet.
+
+## Exit codes
+
+### Worker
+
+- `0`: validated output written
+- `1`: no acceptable code block
+- `2`: argument, configuration, backend, or network error
+- `3`: generated code failed validation
+- `4`: interrupted stream; partial response saved separately
+
+### Batch
+
+- `0`: every task passed
+- `1`: one or more tasks failed or were blocked
+- `2`: invalid/unreadable manifest
+
+## Retry policy
+
+Retry generation or validation failures at most twice, feeding the exact previous
+error back into the revised prompt. Do not retry configuration/backend errors.
+After two unsuccessful code retries, the primary agent may fix the file directly
+but must disclose that in the final summary.
