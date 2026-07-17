@@ -54,6 +54,8 @@ pulling and re-running `./install.sh --copy`).
    ollama pull gemma4:26b-nvfp4   # ~17 GB free RAM — best quality/speed balance
    ```
 
+   (Full device guide: [Recommended Gemma by device](#recommended-gemma-by-device).)
+
 3. **Point the skill at it:**
 
    ```sh
@@ -198,8 +200,8 @@ library release:
    (for coding: `unsloth/...-GGUF` and `bartowski/...-GGUF` repos are reliable).
 2. Pull it with the `hf.co/` prefix and a quant tag:
    ```sh
-   ollama pull hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q3_K_XL
    ollama pull hf.co/unsloth/gemma-4-27b-it-GGUF:Q4_K_M
+   ollama pull hf.co/unsloth/gemma-4-27b-it-GGUF:Q8_0
    ```
 3. Re-run `gemma-coder setup` — the HF model appears in the list like any
    other; pick it and it becomes your coder.
@@ -221,7 +223,7 @@ point the config at the router:
 
 ```sh
 export GEMMA_CODER_API_KEY=hf_...     # or put "api_key" in the config file
-gemma-coder setup --save "Qwen/Qwen3.6-35B-A3B" \
+gemma-coder setup --save "google/gemma-4-27b-it" \
     --url https://router.huggingface.co --api openai
 ```
 
@@ -232,12 +234,31 @@ context files are sent to the provider.
 LM Studio, **MLX** builds for `mlx_lm`. Plain safetensors repos (e.g. NVFP4/TensorRT
 builds) are for GPU serving stacks like vLLM and won't load in these runtimes.
 
-**Model recommendations** (tested on a 24 GB Apple Silicon Mac):
-- `gemma4:26b-nvfp4` — best quality/speed balance, ~45 tok/s, needs ~17 GB free
-- `gemma4:12b-nvfp4` — light option (7.7 GB), leaves RAM for everything else
-- `hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q3_K_XL` — MoE, 3B active params: fast AND strong
-- Reasoning variants are handled automatically — the worker disables thinking so all
-  tokens go to code (`think: false` on ollama; `<think>` blocks stripped elsewhere).
+## Recommended Gemma by device
+
+One family, every device — pick by the memory you can spare while your agent and
+editor are also running:
+
+| Your device | Pull this | Size | What to expect |
+|---|---|---|---|
+| 8 GB RAM laptop, CPU-only | `gemma4:e2b-it-qat` | 4.3 GB | Boilerplate, configs, small single-purpose files |
+| 16 GB Apple Silicon / 8 GB VRAM GPU | `gemma4:12b-nvfp4` | 7.7 GB | Solid daily driver; leaves RAM for the rest of your stack |
+| 24 GB Apple Silicon / 16 GB VRAM GPU | `gemma4:26b-nvfp4` | ~17 GB | The sweet spot — ~45 tok/s, reliably writes 500+ line files (this repo's own scripts are written by it) |
+| 32 GB+ RAM / 24 GB VRAM GPU | `gemma4:31b` | 20 GB | Strongest local Gemma; best for intricate core logic |
+
+Rules of thumb:
+
+- **Long files need bigger models.** Small models tend to stop generating around a
+  couple thousand tokens, which truncates files beyond ~200 lines — the worker
+  rejects the truncated output (exit 1), but you'll waste retries. Use 12b+ for
+  anything substantial, 26b for long files.
+- **Split the work by task**: `--model` overrides the default per call, so a fast
+  small model can handle trivial files while 26b writes the core logic.
+- **RAM headroom matters**: the sizes above are model downloads; leave a few GB
+  free beyond them or generation slows to a crawl.
+- Reasoning variants are handled automatically — the worker disables thinking so
+  all tokens go to code (`think: false` on ollama; `<think>` blocks stripped
+  elsewhere).
 
 ## Manual use (no agent at all)
 
