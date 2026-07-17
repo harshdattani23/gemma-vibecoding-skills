@@ -56,6 +56,8 @@ Installs the skill into your agents' skill directories via the
 python3 ~/.claude/skills/gemma-coder/scripts/setup.py
 ```
 
+Update later with `npx skills update` (npx installs are snapshot copies).
+
 ### From a clone (adds the `gemma-coder` command)
 
 ```sh
@@ -66,9 +68,10 @@ gemma-coder setup           # detects your runtime, lists models, saves your pic
 ```
 
 `install.sh` also puts a `gemma-coder` command on `~/.local/bin` (make sure that's on
-your `PATH`). By default everything is symlinked to this checkout; run
+your `PATH`). By default everything is symlinked to this checkout, so a plain
+`git pull` updates every agent at once — no reinstall needed. Run
 `./install.sh --copy` instead if you want a standalone copy that survives deleting
-the clone.
+the clone (update a copy install by pulling and re-running `./install.sh --copy`).
 
 Setup writes `~/.config/gemma-coder/config.json`. That single config is shared
 by every agent — pick your model once, use it everywhere. Switch models anytime:

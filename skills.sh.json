@@ -1,0 +1,13 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Local-model coding",
+      "description": "The agent plans, specs, and reviews; a free local model (Gemma, Qwen, anything ollama/LM Studio/llama.cpp can serve) writes every line of application code. Zero API cost, code never leaves your machine by default.",
+      "skills": [
+        "gemma-coder"
+      ]
+    }
+  ]
+}
