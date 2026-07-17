@@ -15,9 +15,9 @@ application code on your own machine.
 
 ```
 you ──"build X"──▶ agent (Claude / Gemini / GPT)
-                     │  1. writes tasks/PLAN.md + per-file specs
-                     │  2. runs scripts/gemma_worker.py per task ──▶ local model
-                     │                                               (writes the file)
+                     │  1. writes per-file specs (+ tasks/manifest.json for multi-file)
+                     │  2. runs gemma-coder worker (or batch) ──▶ local model
+                     │                                            (writes the file)
                      │  3. reviews the code, runs tests
                      │  4. on failure: improves the SPEC and re-delegates
                      ▼
@@ -47,14 +47,19 @@ silently rewriting — so the local model stays the author.
 git clone https://github.com/harshdattani23/gemma-vibecoding-skills
 cd gemma-vibecoding-skills
 ./install.sh                # symlinks into every agent skill dir found on your machine
-python3 scripts/setup.py    # detects your runtime, lists models, saves your pick
+gemma-coder setup           # detects your runtime, lists models, saves your pick
 ```
 
-`setup.py` writes `~/.config/gemma-coder/config.json`. That single config is shared
+`install.sh` also puts a `gemma-coder` command on `~/.local/bin` (make sure that's on
+your `PATH`). By default everything is symlinked to this checkout; run
+`./install.sh --copy` instead if you want a standalone copy that survives deleting
+the clone.
+
+Setup writes `~/.config/gemma-coder/config.json`. That single config is shared
 by every agent — pick your model once, use it everywhere. Switch models anytime:
 
 ```sh
-python3 scripts/setup.py --save gemma4:26b-nvfp4
+gemma-coder setup --save gemma4:26b-nvfp4
 ```
 
 ---
@@ -95,6 +100,7 @@ agy -i "Use your gemma-coder skill to build a markdown-to-html converter in src/
 skill scripts once — add to `permissions.allow` in `~/.gemini/antigravity-cli/settings.json`:
 ```json
 "command(python3 ~/.gemini/config/skills/gemma-coder/scripts/gemma_worker.py)",
+"command(python3 ~/.gemini/config/skills/gemma-coder/scripts/gemma_batch.py)",
 "command(python3 ~/.gemini/config/skills/gemma-coder/scripts/setup.py)"
 ```
 (Use the full expanded path if your Antigravity version doesn't expand `~`.)
@@ -240,9 +246,13 @@ OpenAI-compatible endpoints; only needed for hosted providers, never for local s
 
 | Symptom | Fix |
 |---|---|
-| worker exits 2: "no backend configured" | run `python3 scripts/setup.py` |
-| worker exits 2: "cannot reach ..." | start your model server (`ollama serve`, LM Studio, ...) |
-| "no code block in response" | model too small / spec too vague — try a bigger model or tighter spec |
+| worker exits 2: "no backend configured" | run `gemma-coder setup` |
+| worker exits 2: "request failed: ..." | start your model server (`ollama serve`, LM Studio, ...) |
+| worker exits 1: "no acceptable code block" | model too small / spec too vague — the raw response is printed to stderr; try a bigger model or tighter spec |
+| worker exits 3: "validation failed" | generated code didn't parse (or missed `--expect`) — the old file is untouched; improve the spec and retry |
+| worker exits 4 after Ctrl-C during `--stream` | expected: partial output is in `<out>.partial`, the target file is untouched |
+| a `.bak` file appeared next to the output | expected: the previous version is kept when a file is replaced (disable with `--no-backup`) |
+| regenerating a file that contains triple-backticks in string literals always truncates | known limit: fenced extraction stops at the first embedded code fence — such files must be edited by hand |
 | empty responses from a reasoning model via OpenAI API | use ollama's native API for that model (`--api ollama`) |
 | Antigravity headless auto-denies the worker | add the allow-rules shown above |
 | model produces subtly wrong code | that's the design working: the agent's tests catch it and the spec gets improved |
