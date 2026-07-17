@@ -90,14 +90,13 @@ jobs:
                 }
               },
               "tools": {
-                "core": [
-                  "activate_skill",
-                  "update_topic",
-                  "read_file",
-                  "read_many_files",
-                  "list_directory",
-                  "glob",
-                  "search_file_content"
+                "exclude": [
+                  "run_shell_command",
+                  "write_file",
+                  "replace",
+                  "web_fetch",
+                  "google_web_search",
+                  "save_memory"
                 ]
               }
             }
