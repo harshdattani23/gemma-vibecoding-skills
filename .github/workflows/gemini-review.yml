@@ -50,6 +50,11 @@ jobs:
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN || github.token }}'
           GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          # The code-review extension reads these directly; providing them keeps
+          # the model from reaching for shell access it doesn't have.
+          REPOSITORY: '${{ github.repository }}'
+          PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
         with:
           gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
           gemini_model: '${{ vars.GEMINI_MODEL }}'
@@ -85,7 +90,15 @@ jobs:
                 }
               },
               "tools": {
-                "core": []
+                "core": [
+                  "activate_skill",
+                  "update_topic",
+                  "read_file",
+                  "read_many_files",
+                  "list_directory",
+                  "glob",
+                  "search_file_content"
+                ]
               }
             }
           extensions: |
