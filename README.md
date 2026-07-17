@@ -252,7 +252,7 @@ OpenAI-compatible endpoints; only needed for hosted providers, never for local s
 | worker exits 3: "validation failed" | generated code didn't parse (or missed `--expect`) — the old file is untouched; improve the spec and retry |
 | worker exits 4 after Ctrl-C during `--stream` | expected: partial output is in `<out>.partial`, the target file is untouched |
 | a `.bak` file appeared next to the output | expected: the previous version is kept when a file is replaced (disable with `--no-backup`) |
-| regenerating a file that contains triple-backticks in string literals always truncates | known limit: fenced extraction stops at the first embedded code fence — such files must be edited by hand |
+| generated file with its own code fences comes out truncated | extraction honors fence length — this only happens when the model wraps a markdown file in a same-length fence; re-run, or tell the spec to use a four-backtick outer fence |
 | empty responses from a reasoning model via OpenAI API | use ollama's native API for that model (`--api ollama`) |
 | Antigravity headless auto-denies the worker | add the allow-rules shown above |
 | model produces subtly wrong code | that's the design working: the agent's tests catch it and the spec gets improved |

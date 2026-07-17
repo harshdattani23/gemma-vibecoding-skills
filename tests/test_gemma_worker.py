@@ -42,6 +42,34 @@ class ExtractionTests(unittest.TestCase):
         text = "```\nx = 1\n```"
         self.assertEqual(worker.extract_code(text, "python"), "x = 1\n")
 
+    def test_extract_code_keeps_embedded_backticks_off_line_start(self):
+        code = ('def build_prompt(ctx):\n'
+                '    return ("Existing file:\\n"\n'
+                '            "```\\n%s\\n```\\n" % ctx)\n')
+        text = "```python\n" + code + "```"
+        self.assertEqual(worker.extract_code(text, "python"), code)
+
+    def test_extract_code_honors_longer_outer_fence(self):
+        code = "# doc\n```sh\necho hi\n```\ndone\n"
+        text = "````markdown\n" + code + "````"
+        self.assertEqual(worker.extract_code(text), code)
+
+    def test_extract_code_requires_closing_fence(self):
+        self.assertIsNone(worker.extract_code("```python\nx = 1\n"))
+
+    def test_extract_code_accepts_tilde_fences(self):
+        text = "~~~python\nx = 1\n~~~"
+        self.assertEqual(worker.extract_code(text, "python"), "x = 1\n")
+
+    def test_extract_code_reads_tag_from_info_string(self):
+        text = "```python title=example.py\nx = 1\n```"
+        self.assertEqual(worker.extract_code(text, "python"), "x = 1\n")
+
+    def test_extract_code_shorter_fence_does_not_close_longer_one(self):
+        code = "```\ninner\n```\n"
+        text = "`````\n" + code + "`````"
+        self.assertEqual(worker.extract_code(text), code)
+
 
 class ValidationTests(unittest.TestCase):
     def test_python_validation_accepts_valid_source(self):

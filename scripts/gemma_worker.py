@@ -29,6 +29,8 @@ CONFIG_PATH = pathlib.Path(os.environ.get(
 SYSTEM_PROMPT = """You are a senior software engineer. You will receive a spec for exactly one file.
 Respond with a single fenced code block containing the COMPLETE contents of that file.
 No explanations before or after the code block. No placeholders or TODOs — write the full implementation.
+If the file's contents include a triple-backtick sequence, open and close your code block with a longer
+fence (four or more backticks) so the block cannot terminate early.
 Follow the spec exactly: file purpose, function signatures, and behavior are all requirements."""
 
 LANGUAGE_BY_SUFFIX = {
@@ -277,10 +279,44 @@ def detect_language(out_path, explicit=None):
     return LANGUAGE_BY_SUFFIX.get(pathlib.Path(out_path).suffix.lower())
 
 
+FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+
+
+def parse_fenced_blocks(text):
+    """Parse closed fenced code blocks as (tag, code) pairs.
+
+    A fence opened with N backticks or tildes only closes on a standalone line
+    of at least N of the same character, so shorter fences embedded in the code
+    (e.g. triple backticks inside string literals) stay part of the block.
+    """
+    blocks = []
+    fence = None
+    tag = ""
+    lines = []
+    for raw in text.split("\n"):
+        line = raw.rstrip("\r")
+        match = FENCE_LINE.match(line)
+        if fence is None:
+            if match:
+                marker, info = match.group(1), match.group(2).strip()
+                if marker[0] == "`" and "`" in info:
+                    continue
+                fence = (marker[0], len(marker))
+                tag = info.split()[0] if info else ""
+                lines = []
+            continue
+        if (match and match.group(1)[0] == fence[0]
+                and len(match.group(1)) >= fence[1] and not match.group(2).strip()):
+            blocks.append((tag, "\n".join(lines) + "\n" if lines else ""))
+            fence = None
+            continue
+        lines.append(raw)
+    return blocks
+
+
 def extract_code(text, language=None):
     """Extract code, rejecting explicitly mismatched language fences."""
-    blocks = re.findall(
-        r"```([a-zA-Z0-9_+-]*)[ \t]*\r?\n(.*?)```", text, flags=re.DOTALL)
+    blocks = parse_fenced_blocks(text)
     if not blocks:
         return None
     if not language:
