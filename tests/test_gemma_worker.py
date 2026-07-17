@@ -71,6 +71,19 @@ class ExtractionTests(unittest.TestCase):
         self.assertEqual(worker.extract_code(text), code)
 
 
+class DataFlowTests(unittest.TestCase):
+    def test_local_endpoints_are_recognized(self):
+        for url in ("http://localhost:11434", "http://127.0.0.1:1234",
+                    "http://[::1]:8080", "http://0.0.0.0:8080",
+                    "http://127.1.2.3:9000"):
+            self.assertTrue(worker.is_local_base_url(url), url)
+
+    def test_remote_endpoints_are_flagged(self):
+        for url in ("https://router.huggingface.co", "http://192.168.1.20:11434",
+                    "https://api.example.com/v1"):
+            self.assertFalse(worker.is_local_base_url(url), url)
+
+
 class ValidationTests(unittest.TestCase):
     def test_python_validation_accepts_valid_source(self):
         result = worker.validate_code("x = 1\n", "python", "example.py")

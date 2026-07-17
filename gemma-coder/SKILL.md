@@ -115,3 +115,19 @@ Retry generation or validation failures at most twice, feeding the exact previou
 error back into the revised prompt. Do not retry configuration/backend errors.
 After two unsuccessful code retries, the primary agent may fix the file directly
 but must disclose that in the final summary.
+
+## Data flow and trust
+
+- All scripts live in this skill's own `scripts/` directory; nothing is downloaded
+  or executed from elsewhere at runtime, and there is no telemetry.
+- By default the worker talks only to a model server on `localhost` (ollama,
+  LM Studio, llama.cpp, mlx_lm). Task specs and `--context` files are sent to that
+  server and nowhere else.
+- A remote endpoint is used ONLY if the user explicitly configures a non-local
+  `base_url` (via `setup --url` or the config file). The worker prints a notice to
+  stderr whenever the endpoint is not local, because specs and context files will
+  leave the machine. `api_key` / `GEMMA_CODER_API_KEY` is sent as a Bearer token to
+  that configured endpoint only.
+- The only files the worker writes are `--out` (validated, atomic), `<out>.bak`,
+  and `<out>.partial`. The batch runner refuses spec/output paths that escape the
+  project root.

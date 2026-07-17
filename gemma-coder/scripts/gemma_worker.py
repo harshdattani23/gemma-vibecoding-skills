@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 
 CONFIG_PATH = pathlib.Path(os.environ.get(
@@ -71,6 +72,13 @@ def load_config():
     if CONFIG_PATH.exists():
         return json.loads(CONFIG_PATH.read_text())
     return {}
+
+
+def is_local_base_url(base_url):
+    """True when the backend host is loopback/local, so no data leaves the machine."""
+    host = urllib.parse.urlsplit(base_url).hostname or ""
+    return host in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or \
+        host.startswith("127.")
 
 
 def build_prompt(task_path, context_paths, out_path):
@@ -477,6 +485,10 @@ def main():
         print("[gemma-coder] no backend configured. Run: python3 %s"
               % (pathlib.Path(__file__).parent / "setup.py"), file=sys.stderr)
         return 2
+
+    if not is_local_base_url(base_url):
+        print("[gemma-coder] note: backend %s is not local — task specs and "
+              "context files will be sent to it" % base_url, file=sys.stderr)
 
     language = detect_language(args.out, args.lang)
     options = {"temperature": cfg.get("temperature", 0.2),
