@@ -1,0 +1,53 @@
+name: 'Gemini Dispatch'
+
+on:
+  pull_request:
+    types:
+      - 'opened'
+  issue_comment:
+    types:
+      - 'created'
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  dispatch:
+    # Auto-review same-repo PRs on open. Fork PRs are reviewed on demand:
+    # a repo owner/member/collaborator comments "@gemini-cli /review".
+    if: |-
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        github.event.sender.type == 'User' &&
+        startsWith(github.event.comment.body, '@gemini-cli /review') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    outputs:
+      additional_context: '${{ steps.extract.outputs.additional_context }}'
+    steps:
+      - name: 'Extract additional context'
+        id: 'extract'
+        env:
+          REQUEST: '${{ github.event.comment.body }}'
+        run: |-
+          echo "additional_context=${REQUEST#'@gemini-cli /review'}" >> "${GITHUB_OUTPUT}"
+
+  review:
+    needs: 'dispatch'
+    uses: './.github/workflows/gemini-review.yml'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
