@@ -9,6 +9,90 @@ the frontier model does the thinking (architecture, task specs, code review, tes
 while a free local model — Gemma, Qwen, anything you can run — writes every line of
 application code on your own machine.
 
+The only requirement besides an agent: **Python 3.9+** (standard library only) and
+**one** local model runtime (step 2 below — ollama is the easiest).
+
+---
+
+## Step 1 — Install the skill
+
+**Quickest: npx (no clone)**
+
+```sh
+npx skills add harshdattani23/gemma-vibecoding-skills
+```
+
+Installs the skill into your agents' skill directories via the
+[skills CLI](https://skills.sh). Update later with `npx skills update`
+(npx installs are snapshot copies).
+
+**Or from a clone** (adds the `gemma-coder` command to your PATH):
+
+```sh
+git clone https://github.com/harshdattani23/gemma-vibecoding-skills
+cd gemma-vibecoding-skills
+./install.sh                # symlinks into every agent skill dir found on your machine
+```
+
+`install.sh` puts a `gemma-coder` command on `~/.local/bin` (make sure that's on
+your `PATH`). Everything is symlinked to the checkout, so a plain `git pull`
+updates every agent at once — no reinstall needed. Run `./install.sh --copy`
+instead for a standalone copy that survives deleting the clone (update it by
+pulling and re-running `./install.sh --copy`).
+
+## Step 2 — Set up local Gemma
+
+1. **Install ollama** — download from [ollama.com/download](https://ollama.com/download)
+   (macOS/Windows installer or `curl -fsSL https://ollama.com/install.sh | sh` on
+   Linux). The app runs the server automatically; otherwise start it with
+   `ollama serve`.
+
+2. **Pull a Gemma model** sized to your RAM:
+
+   ```sh
+   ollama pull gemma4:12b-nvfp4   # 7.7 GB — fits comfortably on 16 GB machines
+   ollama pull gemma4:26b-nvfp4   # ~17 GB free RAM — best quality/speed balance
+   ```
+
+3. **Point the skill at it:**
+
+   ```sh
+   gemma-coder setup            # clone install
+   # npx install (no command on PATH):
+   python3 ~/.claude/skills/gemma-coder/scripts/setup.py
+   ```
+
+   Setup detects the running server, lists every pulled model, and saves your pick
+   to `~/.config/gemma-coder/config.json` — one config shared by every agent.
+   Switch models anytime with `gemma-coder setup --save <model>`.
+
+4. **Verify with a one-file generation:**
+
+   ```sh
+   printf 'Create hello.py that prints "hello from gemma"\n' > /tmp/task.md
+   gemma-coder worker --task /tmp/task.md --out /tmp/hello.py
+   python3 /tmp/hello.py
+   ```
+
+Not an ollama user? LM Studio, llama.cpp `llama-server`, and `mlx_lm.server` all
+work the same way — start their local server, run setup, pick the model:
+
+| Runtime | Setup | API used |
+|---|---|---|
+| [ollama](https://ollama.com) | `ollama pull gemma4` | native (port 11434) |
+| [LM Studio](https://lmstudio.ai) | enable its local server | OpenAI-compatible (1234) |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) | `llama-server -m model.gguf` | OpenAI-compatible (8080) |
+| [mlx_lm](https://github.com/ml-explore/mlx-lm) (Apple Silicon) | `mlx_lm.server --model <repo>` | OpenAI-compatible (8080) |
+
+## Step 3 — Use it from your agent
+
+```
+> use gemma-coder to build a CLI todo app in this directory
+```
+
+The agent writes the plan and specs, delegates each file to your local model,
+tests the results, and reports what passed. Per-agent specifics are below.
+
 ---
 
 ## How it works
@@ -28,57 +112,6 @@ The strict rule the skill enforces: **the agent never writes application source 
 itself.** It writes plans, specs, and tests; the local model writes the code. When
 generated code fails, the agent fixes the *spec* and retries (up to 2×) rather than
 silently rewriting — so the local model stays the author.
-
-## Requirements
-
-- Python 3.9+ (standard library only, no pip installs)
-- **One** local model runtime — ollama is the easiest but NOT required:
-
-| Runtime | Setup | API used |
-|---|---|---|
-| [ollama](https://ollama.com) | `ollama pull gemma4` | native (port 11434) |
-| [LM Studio](https://lmstudio.ai) | enable its local server | OpenAI-compatible (1234) |
-| [llama.cpp](https://github.com/ggml-org/llama.cpp) | `llama-server -m model.gguf` | OpenAI-compatible (8080) |
-| [mlx_lm](https://github.com/ml-explore/mlx-lm) (Apple Silicon) | `mlx_lm.server --model <repo>` | OpenAI-compatible (8080) |
-
-## Install
-
-### Quickest: npx (no clone)
-
-```sh
-npx skills add harshdattani23/gemma-vibecoding-skills
-```
-
-Installs the skill into your agents' skill directories via the
-[skills CLI](https://skills.sh). Then pick your model:
-
-```sh
-python3 ~/.claude/skills/gemma-coder/scripts/setup.py
-```
-
-Update later with `npx skills update` (npx installs are snapshot copies).
-
-### From a clone (adds the `gemma-coder` command)
-
-```sh
-git clone https://github.com/harshdattani23/gemma-vibecoding-skills
-cd gemma-vibecoding-skills
-./install.sh                # symlinks into every agent skill dir found on your machine
-gemma-coder setup           # detects your runtime, lists models, saves your pick
-```
-
-`install.sh` also puts a `gemma-coder` command on `~/.local/bin` (make sure that's on
-your `PATH`). By default everything is symlinked to this checkout, so a plain
-`git pull` updates every agent at once — no reinstall needed. Run
-`./install.sh --copy` instead if you want a standalone copy that survives deleting
-the clone (update a copy install by pulling and re-running `./install.sh --copy`).
-
-Setup writes `~/.config/gemma-coder/config.json`. That single config is shared
-by every agent — pick your model once, use it everywhere. Switch models anytime:
-
-```sh
-gemma-coder setup --save gemma4:26b-nvfp4
-```
 
 ---
 
