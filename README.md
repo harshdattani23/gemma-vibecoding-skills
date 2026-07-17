@@ -171,7 +171,7 @@ library release:
 ### Option C — Hugging Face model, no ollama at all
 
 - **LM Studio**: use its built-in search (it downloads from the Hub), load the model,
-  enable the local server → run `setup.py`, it's detected on port 1234.
+  enable the local server → run `gemma-coder setup`, it is detected on port 1234.
 - **llama.cpp**: `llama-server -hf unsloth/gemma-4-27b-it-GGUF:Q4_K_M` downloads from
   the Hub and serves it → detected on port 8080.
 - **mlx_lm** (Apple Silicon): `mlx_lm.server --model mlx-community/gemma-4-27b-it-4bit`
