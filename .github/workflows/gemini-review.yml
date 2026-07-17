@@ -53,6 +53,8 @@ jobs:
         with:
           gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
           gemini_model: '${{ vars.GEMINI_MODEL }}'
+          gemini_debug: '${{ fromJSON(vars.GEMINI_DEBUG || false) }}'
+          upload_artifacts: 'true'
           workflow_name: 'gemini-review'
           # Explicitly set the PR number to handle issue_comment triggers
           github_pr_number: '${{ github.event.pull_request.number }}'
