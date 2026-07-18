@@ -1,6 +1,6 @@
 ---
 name: gemma-coder
-description: Delegate code-writing to a configured local or OpenAI-compatible model while the primary agent plans, reviews, and tests. Use when the user explicitly wants a separate model to write application code.
+description: Delegate code-writing to a configured local or OpenAI-compatible model while the primary agent plans, reviews, and tests — saving frontier-model tokens on code generation and getting better output from small open models through tight per-file specs. Use when the user explicitly wants a separate model to write application code.
 ---
 
 # gemma-coder

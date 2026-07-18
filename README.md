@@ -1,13 +1,21 @@
 # gemma-coder
 
-**Your AI agent plans and reviews. A local model writes the code. Zero API cost for every line generated.**
+**Save your frontier tokens for thinking. A free local model writes every line of code — and tight specs make open models write it well.**
 
 gemma-coder is an [Agent Skill](https://agentskills.io) — one folder that plugs into
 **Claude Code**, **Google Antigravity (CLI & IDE)**, **OpenAI Codex CLI**, and any
-other agent that supports the open `SKILL.md` standard. It flips the usual economics:
-the frontier model does the thinking (architecture, task specs, code review, tests)
-while a free local model — Gemma, Qwen, anything you can run — writes every line of
-application code on your own machine.
+other agent that supports the open `SKILL.md` standard. It's built on two ideas:
+
+1. **Save tokens.** Most of what a coding agent burns tokens on is typing code
+   out, not thinking. Here the frontier model spends tokens only on what it's
+   uniquely good at — architecture, per-file specs, code review, tests — while a
+   free local model (Gemma, Qwen, anything you can run) writes every line of
+   application code on your own machine. Zero API cost per generated line.
+2. **Boost open-model code quality.** Small models don't fail on well-specified
+   files; they fail on vague prompts. The skill enforces a strict contract — the
+   agent never writes application source itself, and when generated code fails
+   tests it improves the *spec* and re-delegates — so a 12–27B local model
+   reliably produces code it could never write from a one-line ask.
 
 The only requirement besides an agent: **Python 3.9+** (standard library only) and
 **one** local model runtime (step 2 below — ollama is the easiest).
@@ -113,7 +121,8 @@ you ──"build X"──▶ agent (Claude / Gemini / GPT)
 The strict rule the skill enforces: **the agent never writes application source files
 itself.** It writes plans, specs, and tests; the local model writes the code. When
 generated code fails, the agent fixes the *spec* and retries (up to 2×) rather than
-silently rewriting — so the local model stays the author.
+silently rewriting — so the local model stays the author, and each retry tightens
+the spec, which is exactly what small open models need to produce good code.
 
 ---
 
