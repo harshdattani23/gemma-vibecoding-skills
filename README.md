@@ -27,7 +27,7 @@ The only requirement besides an agent: **Python 3.9+** (standard library only) a
 **Quickest: npx (no clone)**
 
 ```sh
-npx skills add harshdattani23/gemma-vibecoding-skills
+npx skills add vibecoding-skills/gemma-vibecoding-skills
 ```
 
 Installs the skill into your agents' skill directories via the
@@ -37,7 +37,7 @@ Installs the skill into your agents' skill directories via the
 **Or from a clone** (adds the `gemma-coder` command to your PATH):
 
 ```sh
-git clone https://github.com/harshdattani23/gemma-vibecoding-skills
+git clone https://github.com/vibecoding-skills/gemma-vibecoding-skills
 cd gemma-vibecoding-skills
 ./install.sh                # symlinks into every agent skill dir found on your machine
 ```
